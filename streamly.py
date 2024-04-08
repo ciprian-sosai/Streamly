@@ -2,7 +2,7 @@ import logging
 import streamlit as st
 
 
-from langchain.adapters import openai as lc_openai
+#from langchain.adapters import openai as lc_openai
 from PIL import Image, ImageEnhance
 import time
 import json
@@ -11,13 +11,24 @@ import base64
 
 
 from openai import OpenAI, OpenAIError
-client = OpenAI()
+
+api_key = st.secrets["OPENAI_API_KEY"]
+client = OpenAI(api_key=api_key)
+
+assistant_id = "asst_gMCXcwX4afLZWEjKJ2dn7x2c"
+if 'a' in st.query_params:
+    assistant_id = st.query_params['a']
+
+assistant_name = "MiaAI Education"
+if 'n' in st.query_params:
+    assistant_name = assistant_name + " - " + st.query_params['n']
+
 
 logging.basicConfig(level=logging.INFO)
 
 # Streamlit Page Configuration
 st.set_page_config(
-    page_title="Streamly Streamlit Assistant",
+    page_title=assistant_name,
     page_icon="imgs/avatar_streamly.png",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -25,30 +36,18 @@ st.set_page_config(
         "Get help": "https://github.com/AdieLaine/Streamly",
         "Report a bug": "https://github.com/AdieLaine/Streamly",
         "About": """
-            ## Streamly Streamlit Assistant
+            ## Mia AI Education
             
-            **GitHub**: https://github.com/AdieLaine/
+            Created by Maria Sosai, Ioana Buduru si Raisa Cornea.
             
-            The AI Assistant named, Streamly, aims to provide the latest updates from Streamlit,
-            generate code snippets for Streamlit widgets,
-            and answer questions about Streamlit's latest features, issues, and more.
-            Streamly has been trained on the latest Streamlit updates and documentation.
+            Technovation Girls 2024
         """
     }
 )
 
 # Streamlit Updates and Expanders
-st.title("Streamly Streamlit Assistant")
+st.title(assistant_name)
 
-API_DOCS_URL = "https://docs.streamlit.io/library/api-reference"
-
-@st.cache_data(show_spinner=False)
-def long_running_task(duration):
-    """
-    Simulates a long-running operation.
-    """
-    time.sleep(duration)
-    return "Long-running operation completed."
 
 @st.cache_data(show_spinner=False)
 def load_and_enhance_image(image_path, enhance=False):
@@ -67,15 +66,6 @@ def load_and_enhance_image(image_path, enhance=False):
         enhancer = ImageEnhance.Contrast(img)
         img = enhancer.enhance(1.8)
     return img
-
-@st.cache_data(show_spinner=False)
-def load_streamlit_updates():
-    """Load the latest Streamlit updates from a local JSON file."""
-    try:
-        with open("data/streamlit_updates.json", "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
 
 @st.cache_data(show_spinner=False)
 def get_latest_update_from_json(keyword, latest_updates):
@@ -97,159 +87,49 @@ def get_latest_update_from_json(keyword, latest_updates):
 
     return "No updates found for the specified keyword."
 
-def get_streamlit_api_code_version():
-    """
-    Get the current Streamlit API code version from the Streamlit API documentation.
-
-    Returns:
-        str: The current Streamlit API code version.
-    """
-    try:
-        response = requests.get(API_DOCS_URL)
-        if response.status_code == 200:
-            return "1.32.0"
-    except requests.exceptions.RequestException as e:
-        print("Error connecting to the Streamlit API documentation:", str(e))
-    return None
-
-def display_streamlit_updates():
-    """It displays the latest updates of the Streamlit."""
-    with st.expander("Streamlit 1.32 Announcement", expanded=False):
-        image_path = "imgs/streamlit128.png"
-        enhance = st.checkbox("Enhance Image?", False)
-        img = load_and_enhance_image(image_path, enhance)
-        st.image(img, caption="Streamlit 1.32 Announcement", use_column_width="auto", clamp=True, channels="RGB", output_format="PNG")
-        st.markdown("For more details on this version, check out the [Streamlit Forum post](https://docs.streamlit.io/library/changelog#version-1320).")
-
 def img_to_base64(image_path):
     """Convert image to base64"""
     with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
 
 @st.cache_data(show_spinner=False)
-def on_chat_submit(chat_input, api_key, latest_updates, use_langchain=False):
-    """
-    Handle chat input submissions and interact with the OpenAI API.
-
-    Parameters:
-        chat_input (str): The chat input from the user.
-        api_key (str): The OpenAI API key.
-        latest_updates (dict): The latest Streamlit updates fetched from a JSON file or API.
-        use_langchain (bool): Whether to use LangChain OpenAI wrapper.
-
-    Returns:
-        None: Updates the chat history in Streamlit's session state.
-    """
+def on_chat_submit(chat_input):
+    
     user_input = chat_input.strip().lower()
-
-    # Initialize the OpenAI API
-    model_engine = "gpt-3.5-turbo-1106"
-
-    # Initialize the conversation history with system and assistant messages
-    if 'conversation_history' not in st.session_state:
-        assistant_message = "Hello! I am Streamly. How can I assist you with Streamlit today?"
-        formatted_message = []
-        highlights = latest_updates.get("Highlights", {})
-        
-        # Include version info in highlights if available
-        version_info = highlights.get("Version 1.32", {})
-        if version_info:
-            description = version_info.get("Description", "No description available.")
-            formatted_message.append(f"- **Version 1.32**: {description}")
-
-        for category, updates in latest_updates.items():
-            formatted_message.append(f"**{category}**:")
-            for sub_key, sub_values in updates.items():
-                if sub_key != "Version 1.32":  # Skip the version info as it's already included
-                    description = sub_values.get("Description", "No description available.")
-                    documentation = sub_values.get("Documentation", "No documentation available.")
-                    formatted_message.append(f"- **{sub_key}**: {description}")
-                    formatted_message.append(f"  - **Documentation**: {documentation}")
-
-        assistant_message += "\n".join(formatted_message)
-        
-        # Initialize conversation_history
-        st.session_state.conversation_history = [
-            {"role": "system", "content": "You are Streamly, a specialized AI assistant trained in Streamlit."},
-            {"role": "system", "content": "Refer to conversation history to provide context to your reponse."},
-            {"role": "system", "content": "You are trained up to Streamlit Version 1.32.0."},
-            {"role": "assistant", "content": assistant_message}
-        ]
-
 
     # Append user's query to conversation history
     st.session_state.conversation_history.append({"role": "user", "content": user_input})
 
     try:
-        # Logic for assistant's reply
-        assistant_reply = ""
 
-        if use_langchain:
-            # LangChain OpenAI wrapper call
-            lc_result = lc_openai.ChatCompletion.create(
-                messages=st.session_state.conversation_history,
-                model=model_engine,
-                temperature=0
-            )
-            assistant_reply = lc_result["choices"][0]["message"]["content"]
-
-        else:
-            if "latest updates" in user_input:
-                assistant_reply = "Here are the latest highlights from Streamlit:\n"
-                highlights = latest_updates.get("Highlights", {})
-                if highlights:
-                    for version, info in highlights.items():
-                        description = info.get("Description", "No description available.")
-                        assistant_reply += f"- **{version}**: {description}\n"
-            else:
-                
-                # Direct OpenAI API call
-                response = client.chat.completions.create(model=model_engine,
-                messages=st.session_state.conversation_history)
-                
-                assistant_reply = response.choices[0].message.content
-
-            # Append assistant's reply to the conversation history
-            st.session_state.conversation_history.append({"role": "assistant", "content": assistant_reply})
+        # Generate response
+        assistant_message = generate_response(user_message=user_input)
+        
+        # Append assistant's reply to the conversation history
+        st.session_state.conversation_history.append({"role": "assistant", "content": assistant_message})
 
         # Update the Streamlit chat history
         if "history" in st.session_state:
             st.session_state.history.append({"role": "user", "content": user_input})
-            st.session_state.history.append({"role": "assistant", "content": assistant_reply})
+            st.session_state.history.append({"role": "assistant", "content": assistant_message})
 
-    except OpenAIError.APIConnectionError as e:
+    except OpenAIError as e:
         logging.error(f"Error occurred: {e}")
         error_message = f"OpenAI Error: {str(e)}"
         st.error(error_message)
         #st.session_state.history.append({"role": "assistant", "content": error_message})
-
+    
 def main():
     """
     Display Streamlit updates and handle the chat interface.
     """
     # Initialize session state variables for chat history and conversation history
-    if "history" not in st.session_state:
+    if 'history' not in st.session_state:
         st.session_state.history = []
     if 'conversation_history' not in st.session_state:
         st.session_state.conversation_history = []
-
-    # Initialize the chat with a greeting and Streamlit updates if the history is empty
-    if not st.session_state.history:
-        latest_updates = load_streamlit_updates()  # This function should be defined elsewhere to load updates
-        initial_bot_message = "Hello! How can I assist you with Streamlit today? Here are some of the latest highlights:\n"
-        updates = latest_updates.get("Highlights", {})
-        if isinstance(updates, dict):  # Check if updates is a dictionary
-            initial_bot_message = "I am Streamly, what can I help with today?"
-            st.session_state.history.append({"role": "assistant", "content": initial_bot_message})
-            st.session_state.conversation_history = [
-                {"role": "system", "content": "You are Streamly, a specialized AI assistant trained to assist with the logic and programming using Streamlit."},
-                {"role": "system", "content": "Refer to conversation history to provide context to your reponse."},
-                {"role": "system", "content": "Use the streamlit_updates.json local file to look up the latest Streamlit feature updates."},
-                {"role": "system", "content": "When responding, provide code examples, links to documentation, and code examples from Streamlit API to help the user."},
-                {"role": "assistant", "content": initial_bot_message}
-            ]
-        else:
-            st.error("Unexpected structure for 'Highlights' in latest updates.")
+    if 'thread_id' not in st.session_state:
+        st.session_state.thread_id = None
     
     # Inject custom CSS for glowing border effect
     st.markdown(
@@ -331,37 +211,69 @@ def main():
         f'<img src="data:image/png;base64,{img_base64}" class="cover-glow">',
         unsafe_allow_html=True,
     )
-
-    # Access API Key from st.secrets and validate it
-    api_key = st.secrets["OPENAI_API_KEY"]
-    if not api_key:
-        st.error("Please add your OpenAI API key to the Streamlit secrets.toml file.")
-        st.stop()
     
     # Handle Chat and Update Modes
-    if mode == "Chat with Streamly":
-        chat_input = st.chat_input("Ask me about Streamlit updates:")
-        if chat_input:
-            latest_updates = load_streamlit_updates()
-            on_chat_submit(chat_input, api_key, latest_updates, use_langchain)
+    chat_input = st.chat_input("Sunt aici sa te ajut:")
+    if chat_input:
+        on_chat_submit(chat_input)
 
-        # Display chat history with custom avatars
-        for message in st.session_state.history[-20:]:
-            role = message["role"]
-            
-            # Set avatar based on role
-            if role == "assistant":
-                avatar_image = "imgs/avatar_streamly.png"
-            elif role == "user":
-                avatar_image = "imgs/stuser.png"
-            else:
-                avatar_image = None  # Default
-            
-            with st.chat_message(role, avatar=avatar_image):
-                st.write(message["content"])
+    # Display chat history with custom avatars
+    for message in st.session_state.history[-20:]:
+        role = message["role"]
+        
+        # Set avatar based on role
+        if role == "assistant":
+            avatar_image = "imgs/avatar_streamly.png"
+        elif role == "user":
+            avatar_image = "imgs/stuser.png"
+        else:
+            avatar_image = None  # Default
+        
+        with st.chat_message(role, avatar=avatar_image):
+            st.write(message["content"])
 
-    else:
-        display_streamlit_updates()
+    
+
+
+        
+def generate_response(user_message):
+
+    # If a thread doesn't exist, create one and store it
+    if st.session_state.thread_id is None:
+        thread = client.beta.threads.create()
+        st.session_state.thread_id = thread.id
+
+    # Add message to thread
+    message = client.beta.threads.messages.create(
+        thread_id=st.session_state.thread_id,
+        role="user",
+        content=user_message,
+    )
+
+    # Retrieve the Assistant
+    assistant = client.beta.assistants.retrieve(assistant_id)
+
+    # Run the assistant
+    run = client.beta.threads.runs.create(
+        thread_id=st.session_state.thread_id,
+        assistant_id=assistant.id,
+    )
+
+    # Wait for completion
+    # https://platform.openai.com/docs/assistants/how-it-works/runs-and-run-steps#:~:text=under%20failed_at.-,Polling%20for%20updates,-In%20order%20to
+    while run.status in ['queued', 'in_progress']:
+        # wait for 0.5 seconds
+        time.sleep(0.5)
+        run = client.beta.threads.runs.retrieve(thread_id=st.session_state.thread_id, run_id=run.id)
+
+    # Retrieve the Messages
+    messages = client.beta.threads.messages.list(thread_id=st.session_state.thread_id)
+    assistant_message = messages.data[0].content[0].text.value
+    logging.info(f"Generated message: {assistant_message}")
+    
+    return assistant_message
+        
+    
 
 if __name__ == "__main__":
     main()
