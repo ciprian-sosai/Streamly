@@ -170,7 +170,7 @@ def main():
         
         # Set avatar based on role
         if role == "assistant":
-            avatar_image = "imgs/avatar_streamly.png"
+            avatar_image = "imgs/MiasChildren-Logo.png"
         elif role == "user":
             avatar_image = "imgs/stuser.png"
         else:
