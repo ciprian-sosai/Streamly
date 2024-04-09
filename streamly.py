@@ -33,8 +33,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        "Get help": "https://github.com/AdieLaine/Streamly",
-        "Report a bug": "https://github.com/AdieLaine/Streamly",
         "About": """
             ## Mia AI Education
             
