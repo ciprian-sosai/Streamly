@@ -139,18 +139,12 @@ def main():
     )
     st.sidebar.markdown("---")
 
-    # Add another toggle checkbox in the sidebar for advanced interactions
-    show_advanced_info = st.sidebar.toggle("Show Advanced Interactions", value=False)
-
     # Display the st.info box if the checkbox is checked
-    if show_advanced_info:
-        st.sidebar.markdown("""
-        ### Advanced Interactions
-        - **Generate an App**: Use keywords like **generate app**, **create app** to get a basic Streamlit app code.
-        - **Code Explanation**: Ask for **code explanation**, **walk me through the code** to understand the underlying logic of Streamlit code snippets.
-        - **Project Analysis**: Use **analyze my project**, **technical feedback** to get insights and recommendations on your current Streamlit project.
-        - **Debug Assistance**: Use **debug this**, **fix this error** to get help with troubleshooting issues in your Streamlit app.
-        """)
+    
+    st.sidebar.markdown("""
+    ### MiaAI Education - Technovation Girls 2024
+    Please visit https://miaai.education/ for details about the available learning materials.
+    """)
 
     st.sidebar.markdown("---")
     # Load image and convert to base64
