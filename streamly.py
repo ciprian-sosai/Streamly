@@ -139,15 +139,6 @@ def main():
     )
     st.sidebar.markdown("---")
 
-    # Display the st.info box if the checkbox is checked
-    if show_basic_info:
-        st.sidebar.markdown("""
-        ### Basic Interactions
-        - **Ask About Streamlit**: Type your questions about Streamlit's latest updates, features, or issues.
-        - **Search for Code**: Use keywords like 'code example', 'syntax', or 'how-to' to get relevant code snippets.
-        - **Navigate Updates**: Switch to 'Updates' mode to browse the latest Streamlit updates in detail.
-        """)
-
     # Add another toggle checkbox in the sidebar for advanced interactions
     show_advanced_info = st.sidebar.toggle("Show Advanced Interactions", value=False)
 
