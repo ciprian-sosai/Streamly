@@ -172,7 +172,7 @@ def main():
         if role == "assistant":
             avatar_image = "imgs/MiasChildren-Logo.png"
         elif role == "user":
-            avatar_image = "imgs/stuser.png"
+            avatar_image = "imgs/kid.png"
         else:
             avatar_image = None  # Default
         
