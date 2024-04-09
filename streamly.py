@@ -47,44 +47,6 @@ st.set_page_config(
 st.title(assistant_name)
 
 
-@st.cache_data(show_spinner=False)
-def load_and_enhance_image(image_path, enhance=False):
-    """
-    Load and optionally enhance an image.
-
-    Parameters:
-    - image_path: str, path of the image
-    - enhance: bool, whether to enhance the image or not
-
-    Returns:
-    - img: PIL.Image.Image, (enhanced) image
-    """
-    img = Image.open(image_path)
-    if enhance:
-        enhancer = ImageEnhance.Contrast(img)
-        img = enhancer.enhance(1.8)
-    return img
-
-@st.cache_data(show_spinner=False)
-def get_latest_update_from_json(keyword, latest_updates):
-    """
-    Fetch the latest Streamlit update based on a keyword.
-
-    Parameters:
-        keyword (str): The keyword to search for in the Streamlit updates.
-        latest_updates (dict): The latest Streamlit updates data.
-
-    Returns:
-        str: The latest update related to the keyword, or a message if no update is found.
-    """
-    for section in ["Highlights", "Notable Changes", "Other Changes"]:
-        for sub_key, sub_value in latest_updates.get(section, {}).items():
-            for key, value in sub_value.items():
-                if keyword.lower() in key.lower() or keyword.lower() in value.lower():
-                    return f"Section: {section}\nSub-Category: {sub_key}\n{key}: {value}"
-
-    return "No updates found for the specified keyword."
-
 def img_to_base64(image_path):
     """Convert image to base64"""
     with open(image_path, "rb") as img_file:
@@ -168,12 +130,14 @@ def main():
     )
     st.sidebar.markdown("---")
     
-    # Sidebar for Mode Selection
-    mode = st.sidebar.radio("Select Mode:", options=["Latest Updates", "Chat with Streamly"], index=1)
-    use_langchain = st.sidebar.checkbox("Use LangChain OpenAI Adapter 🦜️🔗 ", value=False)
+    # Load and display sidebar image with glowing effect
+    img_path = "imgs/cropped-Technovation-Logo-Girls-White.png"
+    img_base64 = img_to_base64(img_path)
+    st.sidebar.markdown(
+        f'<img src="data:image/png;base64,{img_base64}" class="cover-glow">',
+        unsafe_allow_html=True,
+    )
     st.sidebar.markdown("---")
-    # Toggle checkbox in the sidebar for basic interactions
-    show_basic_info = st.sidebar.toggle("Show Basic Interactions", value=True)
 
     # Display the st.info box if the checkbox is checked
     if show_basic_info:
